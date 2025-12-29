@@ -2,6 +2,14 @@ import { config, alertSettings, updateAlertSettings } from './config.js';
 
 let lastUpdateId = 0;
 
+// HTML 특수문자 이스케이프
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export async function sendTelegramAlert(message) {
   const url = `https://api.telegram.org/bot${config.TELEGRAM_BOT_TOKEN}/sendMessage`;
   
@@ -31,7 +39,6 @@ export async function sendTelegramAlert(message) {
   }
 }
 
-// 텔레그램 명령어 폴링
 export async function pollCommands() {
   const url = `https://api.telegram.org/bot${config.TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=1`;
   
@@ -53,7 +60,6 @@ export async function pollCommands() {
   }
 }
 
-// 명령어 처리
 async function handleCommand(text) {
   const parts = text.trim().split(/\s+/);
   const command = parts[0].toLowerCase();
@@ -116,7 +122,6 @@ async function handleCommand(text) {
       break;
       
     case '/price':
-      // 현재 가격 조회 - index.js에서 처리하도록 이벤트 발생
       if (global.getCurrentPrices) {
         const prices = await global.getCurrentPrices();
         if (prices) {
@@ -130,23 +135,23 @@ async function handleCommand(text) {
 async function sendHelpMessage() {
   const msg = `🤖 <b>TAKE Alert Bot 명령어</b>
 
-<b>📊 조회</b>
+📊 조회
 /status - 현재 설정 확인
 /price - 현재 가격 조회
 
-<b>🔔 알람 제어</b>
+🔔 알람 제어
 /on - 알람 켜기
 /off - 알람 끄기
 
-<b>💰 가격 알람 설정</b>
+💰 가격 알람 설정
 /price_upper [값] - DEX 가격 상한
 /price_lower [값] - DEX 가격 하한
 
-<b>📐 괴리율 알람 설정</b>
-/div_upper [값] - 괴리율 상한 (%)
-/div_lower [값] - 괴리율 하한 (%)
+📐 괴리율 알람 설정
+/div_upper [값] - 괴리율 상한
+/div_lower [값] - 괴리율 하한
 
-<b>예시:</b>
+예시:
 /price_upper 0.55
 /div_lower -2.0`;
 
@@ -158,17 +163,17 @@ async function sendStatusMessage() {
   
   const msg = `📊 <b>현재 설정</b>
 
-<b>알람 상태:</b> ${status}
+알람 상태: ${status}
 
-<b>💰 DEX 가격 알람</b>
-• 상한: $${alertSettings.dexPriceUpper}
-• 하한: $${alertSettings.dexPriceLower}
+💰 DEX 가격 알람
+- 상한: $${alertSettings.dexPriceUpper}
+- 하한: $${alertSettings.dexPriceLower}
 
-<b>📐 괴리율 알람</b>
-• 상한: ${alertSettings.divergenceUpper}%
-• 하한: ${alertSettings.divergenceLower}%
+📐 괴리율 알람
+- 상한: ${alertSettings.divergenceUpper}%
+- 하한: ${alertSettings.divergenceLower}%
 
-<b>⏱ 알람 쿨다운:</b> ${config.ALERT_COOLDOWN / 1000}초`;
+⏱ 알람 쿨다운: ${config.ALERT_COOLDOWN / 1000}초`;
 
   await sendTelegramAlert(msg);
 }
@@ -176,18 +181,21 @@ async function sendStatusMessage() {
 async function sendPriceMessage(prices) {
   const { dexPrice, indexPrice, divergence } = prices;
   
+  const divText = divergence !== null 
+    ? (divergence > 0 ? '+' : '') + divergence.toFixed(3) + '%' 
+    : 'N/A';
+  
   const msg = `💹 <b>현재 TAKE 가격</b>
 
-🥞 PancakeSwap: <b>$${dexPrice.toFixed(6)}</b>
+🥞 PancakeSwap: <b>$${dexPrice?.toFixed(6) || 'N/A'}</b>
 📊 Binance Index: <b>$${indexPrice?.toFixed(6) || 'N/A'}</b>
-📐 괴리율: <b>${divergence !== null ? (divergence > 0 ? '+' : '') + divergence.toFixed(3) + '%' : 'N/A'}</b>
+📐 괴리율: <b>${divText}</b>
 
 ⏰ ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`;
 
   await sendTelegramAlert(msg);
 }
 
-// 가격 알람 포맷
 export function formatPriceAlert(type, dexPrice, threshold) {
   const emoji = type === 'upper' ? '🚀' : '📉';
   const direction = type === 'upper' ? '상승' : '하락';
@@ -201,10 +209,9 @@ export function formatPriceAlert(type, dexPrice, threshold) {
 ⏰ ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`;
 }
 
-// 괴리율 알람 포맷
 export function formatDivergenceAlert(dexPrice, indexPrice, divergence) {
   const emoji = divergence > 0 ? '⬆️' : '⬇️';
-  const status = divergence > 0 ? 'DEX > Index (프리미엄)' : 'DEX < Index (디스카운트)';
+  const status = divergence > 0 ? 'DEX가 Index보다 높음' : 'DEX가 Index보다 낮음';
   
   return `${emoji} <b>TAKE 괴리율 알람</b>
 
