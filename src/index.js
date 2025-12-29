@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ethers } from 'ethers';
 import { config, alertSettings } from './config.js';
 import { getPancakeswapPrice, calculateTakeUsdPrice } from './pancakeswap.js';
