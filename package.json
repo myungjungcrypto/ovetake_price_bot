@@ -1,0 +1,17 @@
+{
+  "name": "take-alert",
+  "version": "1.0.0",
+  "description": "TAKE token price alert - PancakeSwap V3 & Binance Index",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "ethers": "^6.9.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
