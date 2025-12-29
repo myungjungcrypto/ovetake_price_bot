@@ -1,6 +1,7 @@
 {
   "name": "take-alert",
   "version": "1.0.0",
+  "type": "module",
   "description": "TAKE token price alert - PancakeSwap V3 & Binance Index",
   "main": "src/index.js",
   "scripts": {
